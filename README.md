@@ -107,3 +107,4 @@
 - Personal use project created for affirmations and subliminal testing.
 - Uses `tkinter` (GUI), `screeninfo` (monitor detection), and `PyInstaller` for packaging.
 
+![alt text](image.png)
