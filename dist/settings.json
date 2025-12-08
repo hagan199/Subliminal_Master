@@ -1,0 +1,10 @@
+{
+    "batch_size": 5,
+    "flash_duration_ms": 18,
+    "interval_seconds": 1.4364238410596029,
+    "margin_px": 34,
+    "font_size": 100,
+    "font_color": "#400000",
+    "test_mode": false,
+    "test_display_seconds": 2
+}

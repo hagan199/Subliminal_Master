@@ -1,0 +1,20 @@
+{
+    "batch_size": 5,
+    "flash_duration_ms": 44,
+    "interval_seconds": 4.701986754966887,
+    "margin_px": 40,
+    "font_size": 100,
+    "font_color": "#800000",
+    "font_family": "Arial",
+    "font_weight": "bold",
+    "window_theme": "transparent",
+    "auto_start": false,
+    "fade_effect": false,
+    "random_position": true,
+    "priority_mode": true,
+    "scientific_mode": true,
+    "use_message_files": true,
+    "enhanced_mode": true,
+    "test_mode": false,
+    "test_display_seconds": 2
+}
