@@ -5,6 +5,33 @@
 - Supports message files per category with priority weighting: `prophetic` (3×), `spiritual` (2×), `career` (1×).
 - Includes a Test Mode that shows messages clearly (for eye‑visible testing) with adjustable display time.
 
+## How to Run This Project
+
+### Option 1: Run from Python (Recommended for Development)
+1. **Install Python** (3.11 or higher) from [python.org](https://www.python.org/downloads/)
+2. **Open a terminal** in the project folder:
+   ```bash
+   cd c:\Users\hagan\OneDrive\Desktop\new_me\Subliminal_Master
+   ```
+3. **Install the required dependency**:
+   ```bash
+   pip install screeninfo
+   ```
+4. **Run the application**:
+   ```bash
+   python subliminal_master.py
+   ```
+
+### Option 2: Run as Executable (For Distribution)
+1. **Build the executable** (one-time setup):
+   ```bash
+   pip install pyinstaller
+   pyinstaller subliminal_master_fixed.spec --clean --noconfirm
+   ```
+2. **Launch the app**:
+   - Navigate to the `dist` folder
+   - Double-click `SubliminalMaster_Fixed.exe`
+
 ## Requirements
 - Windows 10/11
 - Python `3.11+` (tested on `3.13`)

@@ -203,12 +203,12 @@ class Settings:
     def __init__(self, filename="settings.json"):
         self.filename = filename
         self.defaults = {
-            "batch_size": 3,
+            "batch_size": 5,
             "flash_duration_ms": 35,
             "interval_seconds": 3,
             "margin_px": 20,
             "font_size": 38,
-            "font_color": "#213821"
+            "font_color": "#345C34"
         }
         self.data = self.load()
 
