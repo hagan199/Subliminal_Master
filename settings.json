@@ -16,5 +16,11 @@
     "use_message_files": true,
     "enhanced_mode": true,
     "test_mode": false,
-    "test_display_seconds": 2
+    "test_display_seconds": 2,
+    "test_flash_duration_ms": 1000,
+    "test_font_size": 150,
+    
+  
+
+    
 }
