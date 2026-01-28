@@ -246,6 +246,7 @@ class SubliminalFlasher:
         self.cached_font = None
         self.cached_font_size = -1
         self.monitors = get_monitors()
+        self.image_path = None
         self._load_messages()
         self._shuffle_pool()
 
@@ -353,62 +354,65 @@ class SubliminalFlasher:
 
     def _create_flash_window(self, message):
         if self.window_pool:
-            window, label = self.window_pool.pop()
+            window, label, img_label = self.window_pool.pop()
         else:
             window = tk.Toplevel(self.root)
             window.overrideredirect(True)
             window.attributes("-topmost", True)
             window.configure(bg='black')
-            # Remove transparency to ensure visibility
             window.attributes("-transparentcolor", "black")
             label = tk.Label(window, bg="black", justify=tk.CENTER)
             label.pack(padx=20, pady=10)
+            img_label = tk.Label(window, bg="black")
+            img_label.pack(padx=10, pady=5)
 
-        # Start with full visibility instead of alpha 0
         window.attributes("-alpha", 1.0)
-        
-        # Use reasonable font size - larger in test mode
         font_size = min(self.settings.get("font_size"), 32)
         if self.settings.get("test_mode"):
-            font_size = max(font_size, 24)  # Ensure larger text in test mode
-            
-        # Performance: Cache font object
+            font_size = max(font_size, 24)
         if font_size != self.cached_font_size:
             self.cached_font_size = font_size
             self.cached_font = font.Font(family="Arial", size=self.cached_font_size, weight="bold")
-            
         label.config(text=message, font=self.cached_font, fg=self.settings.get("font_color"), wraplength=self.monitors[0].width * 0.7)
-        
+
+        # Load and display image if set
+        if self.image_path:
+            try:
+                from PIL import Image, ImageTk
+                img = Image.open(self.image_path)
+                img = img.resize((120, 120), Image.ANTIALIAS)
+                photo = ImageTk.PhotoImage(img)
+                img_label.config(image=photo)
+                img_label.image = photo
+            except Exception as e:
+                img_label.config(image=None)
+                img_label.image = None
+                print(f"Error loading image: {e}")
+        else:
+            img_label.config(image=None)
+            img_label.image = None
+
         window.update_idletasks()
         width = window.winfo_width()
         height = window.winfo_height()
-        
-        # Debug info
         print(f"Creating window: {width}x{height}, Message: {message[:50]}...")
-        
         x, y = self._get_random_position(width, height)
         window.geometry(f"{width}x{height}+{x}+{y}")
-        
-        # Ensure window is visible
         window.deiconify()
         window.lift()
-        
-        self.active_windows.append((window, label))
-        
-        # Extended display time in test mode
+        self.active_windows.append((window, label, img_label))
         if self.settings.get("test_mode"):
             display_time = self.settings.get("test_display_seconds") * 7000
         else:
             display_time = self.settings.get("flash_duration_ms")
-            
-        self.root.after(display_time, lambda: self._hide_window(window, label))
+        self.root.after(display_time, lambda: self._hide_window(window, label, img_label))
 
-    def _hide_window(self, window, label):
+    def _hide_window(self, window, label, img_label):
         """Hide window and return to pool for reuse"""
         window.withdraw()
-        self.window_pool.append((window, label))
-        if (window, label) in self.active_windows:
-            self.active_windows.remove((window, label))
+        self.window_pool.append((window, label, img_label))
+        if (window, label, img_label) in self.active_windows:
+            self.active_windows.remove((window, label, img_label))
 
     def _fade_in(self, window, label, alpha=0.0):
         if alpha < 2.0:
@@ -449,7 +453,7 @@ class App(tk.Tk):
         self.flasher = SubliminalFlasher(self, self.settings)
 
         self.title("Subliminal Master")
-        self.geometry("400x450")
+        self.geometry("400x500")
         self.configure(bg="#2E2E2E")
         self.protocol("WM_DELETE_WINDOW", self._on_closing)
 
@@ -467,13 +471,12 @@ class App(tk.Tk):
         self.style.configure("red.TButton", background="#F44336")
 
         self._create_widgets()
-        
+
         # Add test mode settings to defaults if not present
         if "test_mode" not in self.settings.data:
             self.settings.data["test_mode"] = False
             self.settings.data["test_display_seconds"] = 2
             self.settings.save()
-
     def _create_widgets(self):
         main_frame = ttk.Frame(self, padding="20")
         main_frame.pack(fill=tk.BOTH, expand=True)
@@ -493,22 +496,22 @@ class App(tk.Tk):
         ttk.Label(behavior_frame, text="Batch Size (1-5):").grid(row=0, column=0, sticky="w", pady=5)
         self.batch_size = tk.IntVar(value=self.settings.get("batch_size"))
         ttk.Scale(behavior_frame, from_=1, to=5, variable=self.batch_size, orient=tk.HORIZONTAL, 
-                command=lambda v: self.settings.set("batch_size", int(float(v)))).grid(row=0, column=1, sticky="ew")
+            command=lambda v: self.settings.set("batch_size", int(float(v)))).grid(row=0, column=1, sticky="ew")
 
         ttk.Label(behavior_frame, text="Flash Duration (ms, 5-50):").grid(row=1, column=0, sticky="w", pady=5)
         self.flash_duration = tk.IntVar(value=self.settings.get("flash_duration_ms"))
         ttk.Scale(behavior_frame, from_=5, to=50, variable=self.flash_duration, orient=tk.HORIZONTAL, 
-                command=lambda v: self.settings.set("flash_duration_ms", int(float(v)))).grid(row=1, column=1, sticky="ew")
+            command=lambda v: self.settings.set("flash_duration_ms", int(float(v)))).grid(row=1, column=1, sticky="ew")
         
         ttk.Label(behavior_frame, text="Interval (s, 0.1-5):").grid(row=2, column=0, sticky="w", pady=5)
         self.interval = tk.DoubleVar(value=self.settings.get("interval_seconds"))
         ttk.Scale(behavior_frame, from_=0.1, to=5, variable=self.interval, orient=tk.HORIZONTAL, 
-                command=lambda v: self.settings.set("interval_seconds", float(v))).grid(row=2, column=1, sticky="ew")
+            command=lambda v: self.settings.set("interval_seconds", float(v))).grid(row=2, column=1, sticky="ew")
 
         ttk.Label(behavior_frame, text="Edge Margin (px, 0-50):").grid(row=3, column=0, sticky="w", pady=5)
         self.margin = tk.IntVar(value=self.settings.get("margin_px"))
         ttk.Scale(behavior_frame, from_=0, to=50, variable=self.margin, orient=tk.HORIZONTAL, 
-                command=lambda v: self.settings.set("margin_px", int(float(v)))).grid(row=3, column=1, sticky="ew")
+            command=lambda v: self.settings.set("margin_px", int(float(v)))).grid(row=3, column=1, sticky="ew")
         
         behavior_frame.columnconfigure(1, weight=1)
 
@@ -518,13 +521,16 @@ class App(tk.Tk):
         ttk.Label(appearance_frame, text="Font Size (10-100):").grid(row=0, column=0, sticky="w", pady=5)
         self.font_size = tk.IntVar(value=self.settings.get("font_size"))
         ttk.Scale(appearance_frame, from_=10, to=100, variable=self.font_size, orient=tk.HORIZONTAL, 
-                command=lambda v: self.settings.set("font_size", int(float(v)))).grid(row=0, column=1, sticky="ew")
+            command=lambda v: self.settings.set("font_size", int(float(v)))).grid(row=0, column=1, sticky="ew")
 
         self.color_button = ttk.Button(appearance_frame, text="Change Text Color", command=self.change_text_color)
         self.color_button.grid(row=1, column=0, columnspan=2, pady=10)
 
         self.import_button = ttk.Button(appearance_frame, text="Import Messages", command=self.import_messages)
         self.import_button.grid(row=2, column=0, columnspan=2, pady=10)
+
+        self.image_button = ttk.Button(appearance_frame, text="Select Image", command=self.select_image)
+        self.image_button.grid(row=3, column=0, columnspan=2, pady=10)
 
         appearance_frame.columnconfigure(1, weight=1)
 
@@ -548,10 +554,22 @@ class App(tk.Tk):
         ttk.Label(test_frame, text="Display Time (s, 1-10):").grid(row=1, column=0, sticky="w", pady=5)
         self.test_display_time = tk.IntVar(value=self.settings.get("test_display_seconds"))
         test_scale = ttk.Scale(test_frame, from_=1, to=10, variable=self.test_display_time, orient=tk.HORIZONTAL, 
-                              command=lambda v: self.settings.set("test_display_seconds", int(float(v))))
+                      command=lambda v: self.settings.set("test_display_seconds", int(float(v)))
+        )
         test_scale.grid(row=1, column=1, sticky="ew")
 
         test_frame.columnconfigure(1, weight=1)
+    def select_image(self):
+        filepath = filedialog.askopenfilename(
+            title="Select Image",
+            filetypes=(
+                ("Image files", "*.png;*.jpg;*.jpeg;*.gif;*.bmp"),
+                ("All files", "*.*")
+            )
+        )
+        if filepath:
+            self.flasher.image_path = filepath
+            print(f"Image selected: {filepath}")
 
     def import_messages(self):
         filepath = filedialog.askopenfilename(
