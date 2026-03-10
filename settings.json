@@ -6,5 +6,30 @@
     "font_size": 38,
     "font_color": "#a0a0a0",
     "test_mode": false,
-    "test_display_seconds": 0
+    "test_display_seconds": 0,
+    "image_size": 120,
+    "flash_image_only": false,
+    "flash_effect": "Instant",
+    "focus_zone": "Full Screen",
+    "rainbow_mode": false,
+    "ambient_sound": false,
+    "auto_stop_minutes": 0,
+    "session_count": 3,
+    "total_flashes": 1870,
+    "streak_days": 1,
+    "last_session_date": "2026-03-10",
+    "image_paths": [],
+    "categories_enabled": {
+        "career": true,
+        "financial": true,
+        "healing": true,
+        "education": true
+    },
+    "stealth_mode": false,
+    "breathing_pattern": "Off",
+    "power_hour": false,
+    "mirror_mode": false,
+    "night_mode": false,
+    "auto_start": false,
+    "run_on_startup": false
 }
