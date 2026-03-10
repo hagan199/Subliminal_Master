@@ -761,8 +761,12 @@ class App(tk.Tk):
         text = self.new_msg_entry.get().strip()
         if not text or text == "Type your affirmation here...":
             return
-        self.flasher.message_pool.append(text)
-        self.flasher.current_messages.append(text)
+        # Sanitize: limit length
+        msg = self.flasher._sanitize_message(text)
+        if not msg:
+            return
+        self.flasher.message_pool.append(msg)
+        self.flasher.current_messages.append(msg)
         self.new_msg_entry.delete(0, tk.END)
         self._refresh_msg_listbox()
         self.msg_listbox.see(tk.END)
@@ -832,7 +836,7 @@ class App(tk.Tk):
         filepath = filedialog.asksaveasfilename(
             title="Save Messages", defaultextension=".txt",
             initialfile="messages_custom.txt",
-            filetypes=(("Text files", "*.txt"), ("All files", "*.*")))
+            filetypes=(("Text files", "*.txt"),))
         if filepath:
             seen = set()
             unique = []
@@ -938,8 +942,7 @@ class App(tk.Tk):
         filepaths = filedialog.askopenfilenames(
             title="Select Images for Subliminal Flashing",
             filetypes=(
-                ("Image files", "*.png *.jpg *.jpeg *.gif *.bmp *.webp"),
-                ("All files", "*.*")))
+                ("Image files", "*.png *.jpg *.jpeg *.gif *.bmp *.webp"),))
         for fp in filepaths:
             self.flasher.add_image(fp)
         if filepaths:
@@ -952,19 +955,25 @@ class App(tk.Tk):
     def _import_messages(self):
         filepath = filedialog.askopenfilename(
             title="Import Message File",
-            filetypes=(("Text files", "*.txt"), ("All files", "*.*")))
+            filetypes=(("Text files", "*.txt"),))
         if filepath:
             try:
-                with open(filepath, "r", encoding="utf-8") as f:
-                    msgs = [line.strip() for line in f if line.strip()]
-                    if msgs:
-                        self.flasher.message_pool.extend(msgs)
-                        self.flasher._shuffle_pool()
-                        self._refresh_msg_listbox()
-                        messagebox.showinfo(
-                            "Imported",
-                            f"Added {len(msgs)} messages from:\n"
-                            f"{os.path.basename(filepath)}")
+                # Validate file size (5 MB limit)
+                file_size = os.path.getsize(filepath)
+                if file_size > 5_242_880:
+                    messagebox.showerror("Error", "File is too large (max 5 MB).")
+                    return
+                msgs = self.flasher._safe_read_message_file(filepath)
+                if msgs:
+                    self.flasher.message_pool.extend(msgs)
+                    self.flasher._shuffle_pool()
+                    self._refresh_msg_listbox()
+                    messagebox.showinfo(
+                        "Imported",
+                        f"Added {len(msgs)} messages from:\n"
+                        f"{os.path.basename(filepath)}")
+                else:
+                    messagebox.showwarning("Empty", "No valid messages found in file.")
             except Exception as e:
                 messagebox.showerror("Error", f"Could not import file:\n{e}")
 

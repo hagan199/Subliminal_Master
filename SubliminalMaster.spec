@@ -31,9 +31,21 @@ a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    excludes=[
+        # Exclude unnecessary modules to reduce attack surface
+        'unittest', 'test', 'tests',
+        'setuptools', 'pip', 'distutils',
+        'http.server', 'xmlrpc', 'ftplib', 'smtplib',
+        'socket', 'ssl', 'urllib', 'http.client',
+        'asyncio', 'concurrent', 'multiprocessing',
+        'sqlite3', 'dbm', 'shelve',
+        'xml.etree', 'xml.dom', 'xml.parsers',
+        'email', 'mailbox', 'mimetypes',
+        'logging', 'pdb', 'profile', 'cProfile',
+        'doctest', 'pickletools',
+    ],
     win_no_prefer_redirects=False,
-    win_private_assemblies=False,
+    win_private_assemblies=True,  # Prevent DLL hijacking
     cipher=block_cipher,
     noarchive=False,
 )

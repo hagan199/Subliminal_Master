@@ -28,6 +28,13 @@ try:
 except ImportError:
     HAS_PIL = False
 
+# Security limits
+_MAX_MESSAGE_LENGTH = 500       # Max characters per message
+_MAX_MESSAGES_TOTAL = 10_000    # Max messages in pool
+_MAX_FILE_SIZE = 5_242_880      # 5 MB max for message files
+_MAX_IMAGE_SIZE = 52_428_800    # 50 MB max for image files
+_ALLOWED_IMAGE_EXT = {'.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp'}
+
 # Pre-compute transparent bg once
 _TRANS_BG = get_transparent_bg()
 
@@ -69,8 +76,42 @@ class SubliminalFlasher:
 
     # ── Message Loading ─────────────────────────────────────
 
+    @staticmethod
+    def _sanitize_message(msg):
+        """Sanitize a single message string."""
+        if not isinstance(msg, str):
+            return None
+        msg = msg.strip()
+        if not msg:
+            return None
+        # Truncate overly long messages
+        if len(msg) > _MAX_MESSAGE_LENGTH:
+            msg = msg[:_MAX_MESSAGE_LENGTH]
+        return msg
+
+    def _safe_read_message_file(self, filepath):
+        """Read a message file with size and content validation."""
+        try:
+            file_size = os.path.getsize(filepath)
+            if file_size > _MAX_FILE_SIZE:
+                print(f"Skipping {filepath}: file too large ({file_size} bytes)")
+                return []
+            with open(filepath, "r", encoding="utf-8") as f:
+                msgs = []
+                for line in f:
+                    msg = self._sanitize_message(line)
+                    if msg:
+                        msgs.append(msg)
+                    if len(msgs) >= _MAX_MESSAGES_TOTAL:
+                        break
+                return msgs
+        except (OSError, UnicodeDecodeError) as e:
+            print(f"Error reading {filepath}: {e}")
+            return []
+
     def _load_messages(self):
         self.message_pool = []
+        # Only load message files from the current working directory
         message_files = glob.glob("messages_*.txt")
         cats = self.settings.get("categories_enabled") or {}
 
@@ -80,14 +121,19 @@ class SubliminalFlasher:
         }
 
         if not message_files:
-            try:
-                with open("messages.txt", "r") as f:
-                    self.message_pool = [l.strip() for l in f if l.strip()]
-            except FileNotFoundError:
-                pass
+            msgs = self._safe_read_message_file("messages.txt")
+            if msgs:
+                self.message_pool = msgs
         else:
             for filepath in message_files:
                 try:
+                    # Ensure file is in current directory (no path traversal)
+                    real_path = os.path.realpath(filepath)
+                    real_cwd = os.path.realpath(".")
+                    if not real_path.startswith(real_cwd):
+                        print(f"Skipping {filepath}: outside working directory")
+                        continue
+
                     filename_lower = os.path.basename(filepath).lower()
                     skip = False
                     for cat_key in cats:
@@ -96,16 +142,20 @@ class SubliminalFlasher:
                             break
                     if skip:
                         continue
-                    with open(filepath, "r", encoding="utf-8") as f:
-                        msgs = [l.strip() for l in f if l.strip()]
-                        if msgs:
-                            weight = 1
-                            for category, cat_weight in category_weights.items():
-                                if category in filename_lower:
-                                    weight = cat_weight
-                                    break
-                            for _ in range(weight):
-                                self.message_pool.extend(msgs)
+
+                    msgs = self._safe_read_message_file(filepath)
+                    if msgs:
+                        weight = 1
+                        for category, cat_weight in category_weights.items():
+                            if category in filename_lower:
+                                weight = cat_weight
+                                break
+                        for _ in range(weight):
+                            self.message_pool.extend(msgs)
+                        # Enforce total pool limit
+                        if len(self.message_pool) >= _MAX_MESSAGES_TOTAL:
+                            self.message_pool = self.message_pool[:_MAX_MESSAGES_TOTAL]
+                            break
                 except Exception as e:
                     print(f"Error loading {filepath}: {e}")
 
@@ -143,6 +193,25 @@ class SubliminalFlasher:
 
     # ── Image Handling ──────────────────────────────────────
 
+    @staticmethod
+    def _validate_image_path(path):
+        """Validate that an image path is safe to load."""
+        if not isinstance(path, str) or len(path) > 1024:
+            return False
+        ext = os.path.splitext(path)[1].lower()
+        if ext not in _ALLOWED_IMAGE_EXT:
+            return False
+        if not os.path.isfile(path):
+            return False
+        try:
+            file_size = os.path.getsize(path)
+            if file_size > _MAX_IMAGE_SIZE:
+                print(f"Skipping image {path}: too large ({file_size} bytes)")
+                return False
+        except OSError:
+            return False
+        return True
+
     def _get_next_photo(self):
         if not self.image_paths or not HAS_PIL:
             return None
@@ -152,7 +221,13 @@ class SubliminalFlasher:
         cache_key = (path, img_size)
         if cache_key in self.cached_photos:
             return self.cached_photos[cache_key]
+        if not self._validate_image_path(path):
+            return None
         try:
+            img = Image.open(path)
+            # Verify image integrity before processing
+            img.verify()
+            # Re-open after verify (verify closes the file)
             img = Image.open(path)
             img.thumbnail((img_size, img_size), Image.LANCZOS)
             photo = ImageTk.PhotoImage(img)
@@ -163,6 +238,9 @@ class SubliminalFlasher:
             return None
 
     def add_image(self, path):
+        if not self._validate_image_path(path):
+            print(f"Rejected image: {path}")
+            return
         if path not in self.image_paths:
             self.image_paths.append(path)
             self.settings.set("image_paths", self.image_paths)
