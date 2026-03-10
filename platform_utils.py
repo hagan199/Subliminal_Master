@@ -7,9 +7,7 @@
 import sys
 import os
 import subprocess
-import hashlib
 import stat
-from xml.sax.saxutils import escape as xml_escape
 
 PLATFORM = sys.platform  # "win32", "darwin", "linux"
 IS_WINDOWS = PLATFORM == "win32"
@@ -125,7 +123,7 @@ def is_registered_at_startup():
                 r"Software\Microsoft\Windows\CurrentVersion\Run",
                 0, winreg.KEY_READ)
             try:
-                winreg.QueryValueEx(key, "SubliminalMaster")
+                winreg.QueryValueEx(key, "MindFlash")
                 winreg.CloseKey(key)
                 return True
             except FileNotFoundError:
@@ -135,9 +133,18 @@ def is_registered_at_startup():
             return False
     elif IS_MAC:
         plist = os.path.expanduser(
-            "~/Library/LaunchAgents/com.subliminalmaster.plist")
+            "~/Library/LaunchAgents/com.mindflash.plist")
         return os.path.exists(plist)
     return False
+
+
+def __xml_escape(s):
+    """Escape XML special characters to prevent injection."""
+    return (s.replace("&", "&amp;")
+             .replace("<", "&lt;")
+             .replace(">", "&gt;")
+             .replace('"', "&quot;")
+             .replace("'", "&apos;"))
 
 
 def _validate_startup_path(path):
@@ -184,7 +191,7 @@ def register_at_startup():
                 winreg.HKEY_CURRENT_USER,
                 r"Software\Microsoft\Windows\CurrentVersion\Run",
                 0, winreg.KEY_SET_VALUE)
-            winreg.SetValueEx(key, "SubliminalMaster", 0, winreg.REG_SZ, cmd)
+            winreg.SetValueEx(key, "MindFlash", 0, winreg.REG_SZ, cmd)
             winreg.CloseKey(key)
             return True
         except Exception as e:
@@ -193,24 +200,24 @@ def register_at_startup():
 
     elif IS_MAC:
         plist_path = os.path.expanduser(
-            "~/Library/LaunchAgents/com.subliminalmaster.plist")
+            "~/Library/LaunchAgents/com.mindflash.plist")
         # XML-escape paths to prevent XML injection attacks
         if getattr(sys, "frozen", False):
-            program_args = f"    <string>{xml_escape(script)}</string>"
+            program_args = f"    <string>{_xml_escape(script)}</string>"
         else:
             python_path = sys.executable
             if not _validate_startup_path(python_path):
                 print("Startup registration blocked: invalid Python path")
                 return False
-            program_args = (f"    <string>{xml_escape(python_path)}</string>\n"
-                            f"    <string>{xml_escape(script)}</string>")
+            program_args = (f"    <string>{_xml_escape(python_path)}</string>\n"
+                            f"    <string>{_xml_escape(script)}</string>")
         plist_content = f"""<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
   "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
   <key>Label</key>
-  <string>com.subliminalmaster</string>
+  <string>com.mindflash</string>
   <key>ProgramArguments</key>
   <array>
 {program_args}
@@ -242,7 +249,7 @@ def unregister_at_startup():
                 r"Software\Microsoft\Windows\CurrentVersion\Run",
                 0, winreg.KEY_SET_VALUE)
             try:
-                winreg.DeleteValue(key, "SubliminalMaster")
+                winreg.DeleteValue(key, "MindFlash")
             except FileNotFoundError:
                 pass
             winreg.CloseKey(key)
@@ -251,7 +258,7 @@ def unregister_at_startup():
             return False
     elif IS_MAC:
         plist = os.path.expanduser(
-            "~/Library/LaunchAgents/com.subliminalmaster.plist")
+            "~/Library/LaunchAgents/com.mindflash.plist")
         try:
             if os.path.exists(plist):
                 os.remove(plist)

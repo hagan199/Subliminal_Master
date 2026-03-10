@@ -1,5 +1,5 @@
 # ──────────────────────────────────────────────────────────────
-#  Subliminal Master - Entry Point
+#  MindFlash - Entry Point
 #  Flash affirmations on your screen below conscious perception.
 # ──────────────────────────────────────────────────────────────
 

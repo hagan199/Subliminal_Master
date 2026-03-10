@@ -312,8 +312,8 @@ class SubliminalFlasher:
             self._create_flash_window(message)
             self.flash_count += 1
 
-        if self.settings.get("ambient_sound") and HAS_SOUND:
-            play_ping()
+        # Sound removed — silent operation
+        pass  # ambient sound disabled
 
         if self.settings.get("power_hour"):
             delay_ms = max(int(self.settings.get("interval_seconds") * 800), 200)
@@ -369,7 +369,7 @@ class SubliminalFlasher:
 
         effect = self.settings.get("flash_effect")
         if self.settings.get("test_mode"):
-            display_time = self.settings.get("test_display_seconds") * 7000
+            display_time = self.settings.get("test_display_seconds") * 1000
         else:
             display_time = self.settings.get("flash_duration_ms")
 

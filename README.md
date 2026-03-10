@@ -1,137 +1,124 @@
-# Subliminal Master — Installation & Usage Guide
+# Subliminal Master v4.0
 
-## Overview
-- Desktop app that flashes short, weighted messages on your screen.
-- Supports message files per category with priority weighting: `prophetic` (3×), `spiritual` (2×), `career` (1×).
-- Includes a Test Mode that shows messages clearly (for eye‑visible testing) with adjustable display time.
+**Flash affirmations on your screen below conscious perception.**
+Your subconscious absorbs the messages while you work, study, or sleep.
 
-## How to Run This Project
+By [Emmanuel Hagan](https://www.linkedin.com/in/emmanuel-hagan/) | Free & Open Source
 
-### Option 1: Run from Python (Recommended for Development)
-1. **Install Python** (3.11 or higher) from [python.org](https://www.python.org/downloads/)
-2. **Open a terminal** in the project folder:
-   ```bash
-   cd c:\Users\hagan\OneDrive\Desktop\new_me\Subliminal_Master
-   ```
-3. **Install the required dependency**:
-   ```bash
-   pip install screeninfo
-   ```
-4. **Run the application**:
-   ```bash
-   python subliminal_master.py
-   ```
+---
 
-### Option 2: Run as Executable (For Distribution)
-1. **Build the executable** (one-time setup):
-   ```bash
-   pip install pyinstaller
-   pyinstaller subliminal_master_fixed.spec --clean --noconfirm
-   ```
-2. **Launch the app**:
-   - Navigate to the `dist` folder
-   - Double-click `SubliminalMaster_Fixed.exe`
+## Features
+
+- **Subliminal Flashing** — Messages appear and disappear in milliseconds across all monitors
+- **4 Flash Effects** — Instant, Fade In, Glow Pulse, Typewriter
+- **5 Focus Zones** — Full Screen, Top Half, Bottom Half, Center Band, Corners Only
+- **Vision Board** — Flash images alongside text (PNG, JPG, GIF, BMP, WebP)
+- **Breathing Sync** — Messages flash during exhale phase for maximum receptivity
+- **Power Hour** — Rapid-fire intensity mode with faster flashing
+- **Night Mode** — Warm amber colors, easy on eyes while sleeping
+- **Stealth Mode** — Hide the app window, keep subliminals running
+- **Rainbow Neon Mode** — Random vibrant colors each flash
+- **Mirror Mode** — Reversed text for subconscious reading
+- **Message Categories** — Career, Financial, Healing, Education (toggleable)
+- **Preset Packs** — Wealth, Confidence, Health, Love, Career affirmation bundles
+- **Custom Messages** — Add, edit, import, and export your own affirmations
+- **Auto-Stop Timer** — Set a timer (up to 2 hours) for sleep sessions
+- **Auto-Start** — Start flashing when the app opens
+- **Run on Startup** — Launch automatically when you log in (Windows & macOS)
+- **Stats Dashboard** — Track streak days, total flashes, and session count
+- **Keyboard Shortcuts** — Ctrl+S (Start/Stop), Ctrl+H (Stealth), Ctrl+P (Power Hour)
+- **Cross-Platform** — Windows + macOS + Linux
+- **Security Hardened** — Input validation, path sanitization, file integrity checks
 
 ## Requirements
-- Windows 10/11
-- Python `3.11+` (tested on `3.13`)
-- Tcl/Tk (bundled with standard Python on Windows)
-- `pip` (bundled with Python)
 
-## Project Layout
-- `subliminal_master.py` — main application (classic UI)
-- `subliminal_master_fixed.spec` — PyInstaller spec to build the `.exe`
-- `messages_spiritual.txt`, `messages_prophetic.txt`, `messages_career.txt` — message sources (one message per line)
-- `settings.json` — app settings saved automatically
-- `dist/` — created after building the executable (contains the `.exe` and runtime files)
+- Python 3.11+ (tested on 3.13)
+- Windows 10/11, macOS, or Linux
 
-## Quick Start (Run from Source)
-1. Open a terminal in the project folder: `c:\Users\hagan\OneDrive\Desktop\new_me`
-2. (Optional) Create a virtual environment:
-   - `python -m venv .venv`
-   - `.\.venv\Scripts\activate`
-3. Install dependencies:
-   - `pip install screeninfo`
-4. Run the app:
-   - `python subliminal_master.py`
+## Quick Start
 
-## Build the Executable (.exe)
-1. Install PyInstaller:
-   - `pip install pyinstaller`
-2. Build with the provided spec (includes message files and settings):
-   - `pyinstaller subliminal_master_fixed.spec --clean --noconfirm`
-3. Copy message files to `dist` (if not already present):
-   - Git Bash: `cp messages_*.txt dist/`
-   - PowerShell: `Copy-Item messages_*.txt dist/`
-4. Launch the app:
-   - Double‑click `dist\SubliminalMaster_Fixed.exe`
-   - Optional: use `dist\Run_SubliminalMaster.bat` if present
+### Run from Source
 
-## Using the App
-- Start/Stop:
-  - Click `Start` to begin flashing batches; `Stop` to halt.
-- Behavior panel:
-  - `Batch Size (1-5)`: number of messages per batch.
-  - `Flash Duration (ms, 5-50)`: subliminal visibility time per window.
-  - `Interval (s, 0.1-5)`: delay between batches.
-  - `Edge Margin (px, 0-50)`: keeps windows inside screen edges.
-- Appearance & Content:
-  - `Font Size (10-100)`: text size (capped internally for window sizing).
-  - `Change Text Color`: pick a hex color (e.g. `#213821`).
-  - `Import Messages`: load a custom `.txt` (one message per line).
-- Test Mode:
-  - Enable `Test Mode (Messages Visible)` to see messages clearly (full opacity).
-  - Adjust `Display Time (s, 1-10)` to control how long messages stay visible.
-  - Window title shows `TEST MODE` when enabled.
+```bash
+# Install dependencies
+pip install screeninfo Pillow
+
+# Run the app
+python subliminal_master.py
+```
+
+### Build as Executable (.exe)
+
+```bash
+pip install pyinstaller
+pyinstaller SubliminalMaster.spec --clean --noconfirm
+```
+
+The `.exe` will be in the `dist/` folder. Double-click `SubliminalMaster.exe` to launch.
+
+## Project Structure
+
+```
+subliminal_master.py   — Entry point
+app.py                 — Main UI (tabbed interface with Dashboard, Messages, Effects, Settings)
+flasher.py             — Flash engine (overlay windows, animations, effects)
+settings.py            — Settings persistence with validation & sanitization
+messages.py            — Built-in default affirmation messages
+constants.py           — Theme colors, effects, zones, presets
+ui_helpers.py          — Reusable UI components (sections, sliders, toggles)
+platform_utils.py      — Cross-platform utilities (fonts, sound, transparency, startup)
+SubliminalMaster.spec  — PyInstaller build spec
+settings.json          — User settings (auto-saved)
+messages_*.txt         — Message files by category (one message per line)
+```
 
 ## Message Files
-- Place files in the project root with names that include the category:
-  - `messages_prophetic.txt` → weight `3×`
-  - `messages_spiritual.txt` → weight `2×`
-  - `messages_career.txt` → weight `1×`
-- Format: one message per line; empty lines are ignored.
-- If no `messages_*.txt` are found, the app falls back to built‑in messages.
 
-## Settings (`settings.json`)
-- Keys used by the app:
-  - `batch_size` — integer 1–5
-  - `flash_duration_ms` — integer 5–50
-  - `interval_seconds` — float 0.1–5
-  - `margin_px` — integer 0–50
-  - `font_size` — integer 10–100 (internally capped for window sizing)
-  - `font_color` — hex color (e.g. `#213821`)
-  - `test_mode` — boolean (true/false)
-  - `test_display_seconds` — integer 1–10
-- Notes:
-  - Sliders update `settings.json` in real time.
-  - Clicking `Start` applies current slider values before flashing.
+Place `.txt` files in the project root named `messages_<category>.txt`:
+
+- `messages_career.txt` — weighted 4x (priority)
+- `messages_financial.txt` — weighted 1x
+- `messages_healing.txt` — weighted 1x
+- `messages_education.txt` — weighted 1x
+
+Format: one message per line. Empty lines are ignored. If no files exist, built-in defaults are used.
+
+## Settings
+
+All settings are saved in `settings.json` and validated on load:
+
+| Setting | Type | Range | Default |
+|---------|------|-------|---------|
+| batch_size | int | 1-10 | 5 |
+| flash_duration_ms | int | 1-500 | 35 |
+| interval_seconds | float | 0.1-30 | 3.0 |
+| margin_px | int | 0-200 | 20 |
+| font_size | int | 8-200 | 38 |
+| font_color | hex | #RRGGBB | #00E676 |
+| auto_stop_minutes | int | 0-1440 | 0 |
+| test_mode | bool | — | false |
+
+## Security
+
+The app includes multiple layers of protection:
+
+- **Input validation** — All settings type-checked, range-clamped, and whitelist-validated
+- **File size limits** — Settings (1 MB), messages (5 MB), images (50 MB)
+- **Path traversal protection** — Message files restricted to working directory
+- **Image integrity verification** — PIL verify() before processing
+- **Atomic file writes** — Settings saved via temp file + rename (prevents corruption)
+- **XML injection protection** — macOS plist paths are escaped
+- **Startup path validation** — Blocks shell metacharacters in registry/plist paths
+- **Extension whitelisting** — Only allowed file types for images and imports
+- **Unknown key stripping** — Prevents data injection via settings.json
 
 ## Troubleshooting
-- Start button “not working”:
-  - Ensure Python/Tkinter installed: `python --version`.
-  - Verify `screeninfo` is installed: `pip show screeninfo`.
-  - Check console output (if running `.exe` built with `console=True`).
-  - The windows may open on a different monitor; try enabling Test Mode.
-- Build error `PermissionError: Access is denied`:
-  - Close any running `.exe` from a previous build.
-  - Delete `build/` and `dist/` (or use `--clean`) and rebuild.
-- Messages not visible:
-  - Enable Test Mode and increase `Display Time`.
-  - Pick a contrasting `font_color`.
-- No messages loaded:
-  - Ensure at least one `messages_*.txt` file exists.
-  - Use `Import Messages` to verify a custom file.
 
-## Advanced
-- Change executable name:
-  - Edit `name='SubliminalMaster_Fixed'` in `subliminal_master_fixed.spec`.
-- Hide console in production:
-  - Set `console=False` in the spec and rebuild.
-- Rebuild commands reference:
-  - `pyinstaller subliminal_master_fixed.spec --clean --noconfirm`
+- **Messages not visible** — Enable Test Mode in Settings tab, increase Display Time
+- **Build error "Access is denied"** — Close the running .exe first, then rebuild
+- **No messages loaded** — Ensure at least one `messages_*.txt` file exists in the project root
+- **App won't start** — Run `pip install screeninfo Pillow` and try again
 
-## License & Credits
-- Personal use project created for affirmations and subliminal testing.
-- Uses `tkinter` (GUI), `screeninfo` (monitor detection), and `PyInstaller` for packaging.
+## License
 
-![alt text](image.png)
+Personal use project. Built with Python, Tkinter, and Pillow.

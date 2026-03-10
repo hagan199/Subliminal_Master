@@ -39,7 +39,7 @@ class App(tk.Tk):
         self.flasher = SubliminalFlasher(self, self.settings)
         self._preview_photos = []
 
-        self.title("Subliminal Master")
+        self.title("MindFlash")
         self.geometry("540x780")
         self.minsize(500, 700)
         self.configure(bg=BG_DARK)
@@ -123,11 +123,11 @@ class App(tk.Tk):
         header = tk.Frame(self, bg=BG_DARK, padx=20, pady=8)
         header.pack(fill=tk.X)
 
-        self.title_label = tk.Label(header, text="SUBLIMINAL MASTER",
+        self.title_label = tk.Label(header, text="MINDFLASH",
                                     bg=BG_DARK, fg=GOLD,
                                     font=(FONT_FAMILY, 20, "bold"))
         self.title_label.pack()
-        tk.Label(header, text="Reprogram your mind. One flash at a time.",
+        tk.Label(header, text="Flash your mind. Shape your future.",
                  bg=BG_DARK, fg=FG_DIM,
                  font=(FONT_FAMILY, 9, "italic")).pack(pady=(0, 4))
 
@@ -448,12 +448,6 @@ class App(tk.Tk):
                     lambda: self.settings.set("rainbow_mode", self.rainbow_var.get()),
                     PINK, bold=True)
 
-        self.sound_var = tk.BooleanVar(value=self.settings.get("ambient_sound"))
-        make_toggle(fx_section, "Ambient Ping Sound  --  Soft beep with each flash batch",
-                    self.sound_var,
-                    lambda: self.settings.set("ambient_sound", self.sound_var.get()),
-                    FG_PRIMARY)
-
         self.mirror_var = tk.BooleanVar(value=self.settings.get("mirror_mode"))
         make_toggle(fx_section, "Mirror Mode  --  Reversed text (subconscious reads both ways)",
                     self.mirror_var,
@@ -583,9 +577,9 @@ class App(tk.Tk):
 
         # ── About ──
         about_section = make_section(tab, "About")
-        tk.Label(about_section, text="Subliminal Master v4.0",
+        tk.Label(about_section, text="MindFlash v4.0",
                  bg=BG_CARD, fg=GOLD, font=(FONT_FAMILY, 12, "bold")).pack()
-        tk.Label(about_section, text="by Hagan  |  Free & Open Source",
+        tk.Label(about_section, text="by Emmanuel Hagan  |  Free & Open Source",
                  bg=BG_CARD, fg=FG_DIM, font=(FONT_FAMILY, 9)).pack()
         tk.Label(about_section,
                  text="Flash affirmations on your screen below conscious perception.\n"
@@ -593,6 +587,16 @@ class App(tk.Tk):
                       "Works on Windows and macOS.",
                  bg=BG_CARD, fg=FG_DIM, font=(FONT_FAMILY, 9),
                  wraplength=400, justify=tk.CENTER).pack(pady=(6, 0))
+
+        # LinkedIn link
+        linkedin_label = tk.Label(
+            about_section,
+            text="linkedin.com/in/emmanuel-hagan",
+            bg=BG_CARD, fg=CYAN, font=(FONT_FAMILY, 9, "underline"),
+            cursor="hand2")
+        linkedin_label.pack(pady=(6, 0))
+        linkedin_label.bind("<Button-1>", lambda e: __import__("webbrowser").open(
+            "https://www.linkedin.com/in/emmanuel-hagan/"))
 
     # ════════════════════════════════════════════════════════
     #   LIVE UPDATES
@@ -891,18 +895,18 @@ class App(tk.Tk):
             self.flasher.stop()
             self.start_stop_button.config(text="START FLASHING",
                                           style="Start.TButton")
-            self.title("Subliminal Master")
+            self.title("MindFlash")
             self._update_stats_display()
         else:
             self.flasher.start()
             self.start_stop_button.config(text="STOP", style="Stop.TButton")
             mode = " - TEST MODE" if self.settings.get("test_mode") else ""
-            self.title(f"Subliminal Master{mode}")
+            self.title(f"MindFlash{mode}")
 
     def _on_auto_stopped(self):
         self.start_stop_button.config(text="START FLASHING",
                                        style="Start.TButton")
-        self.title("Subliminal Master")
+        self.title("MindFlash")
         self._update_stats_display()
         self.timer_label.config(text="Auto-stopped! Great session.", fg=GOLD)
 
@@ -910,9 +914,9 @@ class App(tk.Tk):
         test_mode = self.test_mode_var.get()
         self.settings.set("test_mode", test_mode)
         if test_mode:
-            self.title("Subliminal Master - TEST MODE")
+            self.title("MindFlash - TEST MODE")
         else:
-            self.title("Subliminal Master")
+            self.title("MindFlash")
 
     def _toggle_run_on_startup(self):
         if self.run_on_startup_var.get():
@@ -920,7 +924,7 @@ class App(tk.Tk):
             if ok:
                 self.settings.set("run_on_startup", True)
                 messagebox.showinfo("Startup Enabled",
-                                    "Subliminal Master will now start automatically "
+                                    "MindFlash will now start automatically "
                                     "when you log in to your computer.")
             else:
                 self.run_on_startup_var.set(False)
