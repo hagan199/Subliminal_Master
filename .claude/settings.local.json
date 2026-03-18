@@ -6,7 +6,10 @@
       "Bash(\"C:/Users/hagan/OneDrive/Desktop/new_me/Subliminal_Master/.venv/Scripts/python.exe\" -m pip install Pillow)",
       "Bash(\"C:/Users/hagan/OneDrive/Desktop/new_me/Subliminal_Master/.venv/Scripts/python.exe\" -c \"\nimport sys, os\nos.chdir\\('C:/Users/hagan/OneDrive/Desktop/new_me/Subliminal_Master'\\)\nexec\\(open\\('subliminal_master.py'\\).read\\(\\).split\\('if __name__'\\)[0]\\)\nprint\\('OK - All classes loaded'\\)\nprint\\(f'HAS_PIL={HAS_PIL}, HAS_SOUND={HAS_SOUND}'\\)\nprint\\(f'Effects: {FLASH_EFFECTS}'\\)\nprint\\(f'Zones: {FOCUS_ZONES}'\\)\nprint\\(f'Neon colors: {len\\(NEON_COLORS\\)}'\\)\ns = Settings\\(\\)\nprint\\(f'Settings keys: {list\\(s.data.keys\\(\\)\\)}'\\)\n\" 2>&1)",
       "Bash(ls -la \"C:\\\\Users\\\\hagan\\\\OneDrive\\\\Desktop\\\\new_me\\\\Subliminal_Master\"/*.py \"C:\\\\Users\\\\hagan\\\\OneDrive\\\\Desktop\\\\new_me\\\\Subliminal_Master\"/*.spec 2>/dev/null)",
-      "Bash(cd \"C:/laragon/www/Subliminal_Master\" && python -c \"from settings import Settings; s = Settings\\(\\); print\\('Settings OK:', s.data.get\\('batch_size'\\), s.data.get\\('font_color'\\)\\)\")"
+      "Bash(cd \"C:/laragon/www/Subliminal_Master\" && python -c \"from settings import Settings; s = Settings\\(\\); print\\('Settings OK:', s.data.get\\('batch_size'\\), s.data.get\\('font_color'\\)\\)\")",
+      "Bash(grep -E \"\\\\.py$|\\\\.gitignore|dist|\\\\.github\")",
+      "Bash(grep:*)",
+      "Bash(git check-ignore:*)"
     ]
   }
 }
