@@ -9,7 +9,8 @@
       "Bash(cd \"C:/laragon/www/Subliminal_Master\" && python -c \"from settings import Settings; s = Settings\\(\\); print\\('Settings OK:', s.data.get\\('batch_size'\\), s.data.get\\('font_color'\\)\\)\")",
       "Bash(grep -E \"\\\\.py$|\\\\.gitignore|dist|\\\\.github\")",
       "Bash(grep:*)",
-      "Bash(git check-ignore:*)"
+      "Bash(git check-ignore:*)",
+      "Bash(git config:*)"
     ]
   }
 }
