@@ -451,6 +451,7 @@ class SubliminalFlasher:
             window.attributes("-alpha", 1.0)
             window.deiconify()
             window.lift()
+            window.update()  # force full paint so short flashes actually render
             self.active_windows.append((window, label, img_label))
             self.root.after(display_time, lambda w=window, l=label, il=img_label: self._hide_window(w, l, il))
 

@@ -1,21 +1,21 @@
 {
     "batch_size": 4,
-    "flash_duration_ms": 241,
+    "flash_duration_ms": 346,
     "interval_seconds": 3.6,
-    "margin_px": 40,
+    "margin_px": 4,
     "font_size": 32,
     "font_color": "#FFFFFF",
-    "test_mode": true,
-    "test_display_seconds": 1.61,
+    "test_mode": false,
+    "test_display_seconds": 6.82,
     "image_size": 120,
     "flash_image_only": false,
     "flash_effect": "Instant",
     "focus_zone": "Center Band",
     "rainbow_mode": false,
     "ambient_sound": false,
-    "auto_stop_minutes": 26,
-    "session_count": 35,
-    "total_flashes": 3813,
+    "auto_stop_minutes": 27,
+    "session_count": 39,
+    "total_flashes": 4005,
     "streak_days": 1,
     "last_session_date": "2026-05-02",
     "image_paths": [],
@@ -32,9 +32,9 @@
     "night_mode": false,
     "auto_start": false,
     "run_on_startup": false,
-    "color_theme": "Sunset",
+    "color_theme": "Ice Crystal",
     "daily_goal": 500,
-    "daily_flashes_today": 1738,
+    "daily_flashes_today": 1870,
     "daily_flashes_date": "2026-05-02",
     "session_history": [
         {
@@ -141,6 +141,16 @@
             "date": "2026-05-02 01:53",
             "flashes": 68,
             "duration": 59
+        },
+        {
+            "date": "2026-05-02 02:06",
+            "flashes": 76,
+            "duration": 68
+        },
+        {
+            "date": "2026-05-02 02:07",
+            "flashes": 56,
+            "duration": 49
         }
     ],
     "achievements_unlocked": [

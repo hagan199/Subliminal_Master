@@ -73,24 +73,28 @@ def make_window_transparent(window):
     window.overrideredirect(True)
     window.attributes("-topmost", True)
 
+    # Use magenta as the transparent-key color instead of black so
+    # anti-aliased edges of light text don't get partially keyed away
+    # (black AA pixels would otherwise show as ghost dots).
+    key = "#FF00FE"
     if IS_WINDOWS:
-        window.configure(bg="black")
-        window.attributes("-transparentcolor", "black")
+        window.configure(bg=key)
+        window.attributes("-transparentcolor", key)
     elif IS_MAC:
         window.configure(bg="systemTransparent")
         try:
             window.attributes("-transparent", True)
         except Exception:
-            window.configure(bg="black")
+            window.configure(bg=key)
             window.wait_visibility(window)
             try:
                 window.attributes("-alpha", 0.95)
             except Exception:
                 pass
     else:
-        window.configure(bg="black")
+        window.configure(bg=key)
         try:
-            window.attributes("-transparentcolor", "black")
+            window.attributes("-transparentcolor", key)
         except Exception:
             window.attributes("-alpha", 0.95)
 
@@ -99,7 +103,7 @@ def get_transparent_bg():
     """Return the bg color string used for transparent flash windows."""
     if IS_MAC:
         return "systemTransparent"
-    return "black"
+    return "#FF00FE"
 
 
 # ── Startup registration ──────────────────────────────────
