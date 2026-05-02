@@ -8,6 +8,9 @@ import tkinter as tk
 from tkinter import ttk, colorchooser, filedialog, messagebox
 import os
 import time
+import datetime
+import hashlib
+import math
 
 from constants import (
     BG_DARK, BG_CARD, BG_ACCENT, BG_INPUT, BG_HOVER,
@@ -15,6 +18,7 @@ from constants import (
     GREEN, GREEN_HOVER, RED, RED_HOVER, GOLD, PURPLE, PURPLE_HOVER,
     CYAN, PINK, ORANGE,
     FLASH_EFFECTS, FOCUS_ZONES, BREATHING_PATTERNS, MESSAGE_PRESETS,
+    COLOR_THEMES, ACHIEVEMENTS, DAILY_QUOTES,
 )
 from messages import AWESOME_MESSAGES
 from flasher import SubliminalFlasher, HAS_PIL
@@ -125,11 +129,12 @@ class App(tk.Tk):
 
         self.title_label = tk.Label(header, text="MINDFLASH",
                                     bg=BG_DARK, fg=GOLD,
-                                    font=(FONT_FAMILY, 20, "bold"))
+                                    font=(FONT_FAMILY, 22, "bold"))
         self.title_label.pack()
-        tk.Label(header, text="Flash your mind. Shape your future.",
-                 bg=BG_DARK, fg=FG_DIM,
-                 font=(FONT_FAMILY, 9, "italic")).pack(pady=(0, 4))
+        self._tagline = tk.Label(header, text="Flash your mind. Shape your future.",
+                                 bg=BG_DARK, fg=FG_DIM,
+                                 font=(FONT_FAMILY, 9, "italic"))
+        self._tagline.pack(pady=(0, 4))
 
         # ── Big Start / Stop button ──
         self.start_stop_button = ttk.Button(
@@ -137,12 +142,19 @@ class App(tk.Tk):
             width=24, style="Start.TButton")
         self.start_stop_button.pack(pady=(2, 4))
 
-        # ── Live status bar ──
+        # ── Live status bar with pulsing indicator ──
         status_bar = tk.Frame(header, bg=BG_DARK)
         status_bar.pack(fill=tk.X)
-        self.status_label = tk.Label(status_bar, text="Ready to go", bg=BG_DARK,
+
+        status_row = tk.Frame(status_bar, bg=BG_DARK)
+        status_row.pack()
+        self._pulse_dot = tk.Label(status_row, text="  ", bg=BG_DARK, fg=BG_DARK,
+                                    font=(FONT_FAMILY, 8))
+        self._pulse_dot.pack(side=tk.LEFT, padx=(0, 4))
+        self.status_label = tk.Label(status_row, text="Ready to go", bg=BG_DARK,
                                      fg=FG_DIM, font=(FONT_FAMILY, 9))
-        self.status_label.pack()
+        self.status_label.pack(side=tk.LEFT)
+
         self.timer_label = tk.Label(status_bar, text="", bg=BG_DARK,
                                     fg=FG_DIM, font=(FONT_FAMILY, 9))
         self.timer_label.pack()
@@ -203,6 +215,21 @@ class App(tk.Tk):
     def _build_dashboard_tab(self):
         _, tab = self._make_scrollable_tab("Dashboard")
 
+        # ── Daily Motivational Quote ──
+        quote_section = tk.Frame(tab, bg=BG_CARD, highlightbackground=PURPLE,
+                                 highlightthickness=1, padx=16, pady=10)
+        quote_section.pack(fill=tk.X, pady=(0, 10))
+
+        # Pick a deterministic daily quote based on date
+        day_hash = int(hashlib.md5(
+            datetime.date.today().isoformat().encode()).hexdigest(), 16)
+        quote_text, quote_author = DAILY_QUOTES[day_hash % len(DAILY_QUOTES)]
+        tk.Label(quote_section, text=f'"{quote_text}"', bg=BG_CARD, fg=FG_BRIGHT,
+                 font=(FONT_FAMILY, 10, "italic"), wraplength=440,
+                 justify=tk.CENTER).pack()
+        tk.Label(quote_section, text=f"-- {quote_author}", bg=BG_CARD, fg=PURPLE,
+                 font=(FONT_FAMILY, 9)).pack(pady=(2, 0))
+
         # ── Stats cards ──
         stats_section = make_section(tab, "Your Journey",
                                      "Track your consistency and total subliminal exposure.")
@@ -228,6 +255,48 @@ class App(tk.Tk):
         stat_card(cards, 1, "TOTAL FLASHES", "_total_val", CYAN)
         stat_card(cards, 2, "SESSIONS", "_sessions_val", GREEN)
         self._update_stats_display()
+
+        # ── Daily Goal ──
+        goal_section = make_section(tab, "Daily Goal",
+                                    "Set a daily flash target and track your progress.")
+
+        goal_row = tk.Frame(goal_section, bg=BG_CARD)
+        goal_row.pack(fill=tk.X, pady=2)
+        tk.Label(goal_row, text="Goal:", bg=BG_CARD, fg=FG_PRIMARY,
+                 font=(FONT_FAMILY, 10)).pack(side=tk.LEFT)
+
+        self.goal_var = tk.IntVar(value=self.settings.get("daily_goal"))
+        goal_options = [100, 250, 500, 1000, 2500, 5000, 10000]
+        goal_combo = ttk.Combobox(goal_row, textvariable=self.goal_var,
+                                  values=goal_options, width=8, state="readonly")
+        goal_combo.pack(side=tk.LEFT, padx=(8, 0))
+        goal_combo.bind("<<ComboboxSelected>>",
+                         lambda e: self.settings.set("daily_goal", self.goal_var.get()))
+        tk.Label(goal_row, text="flashes/day", bg=BG_CARD, fg=FG_DIM,
+                 font=(FONT_FAMILY, 9)).pack(side=tk.LEFT, padx=(6, 0))
+
+        # Progress bar (text-based for Tkinter)
+        self._goal_progress_label = tk.Label(goal_section, text="", bg=BG_CARD,
+                                             fg=GREEN, font=(FONT_MONO, 10, "bold"))
+        self._goal_progress_label.pack(fill=tk.X, pady=(6, 2))
+        self._goal_percent_label = tk.Label(goal_section, text="", bg=BG_CARD,
+                                            fg=FG_DIM, font=(FONT_FAMILY, 9))
+        self._goal_percent_label.pack(fill=tk.X)
+        self._update_daily_goal_display()
+
+        # ── Achievements ──
+        ach_section = make_section(tab, "Achievements",
+                                   "Unlock milestones as you build your practice.")
+        self._achievements_frame = tk.Frame(ach_section, bg=BG_CARD)
+        self._achievements_frame.pack(fill=tk.X)
+        self._refresh_achievements_display()
+
+        # ── Session History ──
+        history_section = make_section(tab, "Recent Sessions",
+                                       "Your last sessions at a glance.")
+        self._history_frame = tk.Frame(history_section, bg=BG_CARD)
+        self._history_frame.pack(fill=tk.X)
+        self._refresh_history_display()
 
         # ── Quick actions ──
         quick_section = make_section(tab, "Quick Actions",
@@ -310,6 +379,20 @@ class App(tk.Tk):
         self.new_msg_entry.bind("<Return>", lambda e: self._add_message())
         ttk.Button(add_bar, text="+ Add", command=self._add_message,
                    style="Accent.TButton").pack(side=tk.RIGHT)
+
+        # Search bar
+        search_bar = tk.Frame(editor_section, bg=BG_CARD)
+        search_bar.pack(fill=tk.X, pady=(0, 4))
+        tk.Label(search_bar, text="Search:", bg=BG_CARD, fg=FG_DIM,
+                 font=(FONT_FAMILY, 9)).pack(side=tk.LEFT)
+        self._search_var = tk.StringVar()
+        search_entry = tk.Entry(search_bar, textvariable=self._search_var,
+                                bg=BG_INPUT, fg=FG_BRIGHT, insertbackground=FG_BRIGHT,
+                                font=(FONT_FAMILY, 9), relief="flat", bd=4)
+        search_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(6, 4))
+        self._search_var.trace_add("write", lambda *_: self._refresh_msg_listbox())
+        tk.Label(search_bar, text="", bg=BG_CARD, fg=FG_DIM,
+                 font=(FONT_FAMILY, 8)).pack(side=tk.RIGHT)
 
         # Listbox
         list_container = tk.Frame(editor_section, bg=BG_DARK)
@@ -412,6 +495,10 @@ class App(tk.Tk):
             "Fade In": "Message fades in smoothly, then fades out.",
             "Glow Pulse": "Message pulses with a glowing sine-wave effect.",
             "Typewriter": "Letters appear one by one like typing.",
+            "Slide In": "Message slides in from the edge of the screen.",
+            "Matrix Rain": "Characters scramble and decode like the Matrix.",
+            "Spiral Emerge": "Message spirals in from a circular orbit.",
+            "Random": "Surprise! A different effect every flash for variety.",
         }
         self.effect_hint_label = tk.Label(fx_section, text="", bg=BG_CARD,
                                           fg=FG_DIM, font=(FONT_FAMILY, 8),
@@ -453,6 +540,39 @@ class App(tk.Tk):
                     self.mirror_var,
                     lambda: self.settings.set("mirror_mode", self.mirror_var.get()),
                     CYAN)
+
+        # ── Color Theme ──
+        theme_section = make_section(tab, "Ambient Color Theme",
+                                     "Choose a color palette for your flash messages. "
+                                     "Enable Rainbow Mode above to see themed colors.")
+
+        self.theme_var = tk.StringVar(value=self.settings.get("color_theme"))
+        theme_grid = tk.Frame(theme_section, bg=BG_CARD)
+        theme_grid.pack(fill=tk.X, pady=4)
+
+        self._theme_buttons = {}
+        for i, theme_name in enumerate(COLOR_THEMES.keys()):
+            theme_data = COLOR_THEMES[theme_name]
+            preview_colors = theme_data["colors"][:5]
+            btn_frame = tk.Frame(theme_grid, bg=BG_CARD)
+            btn_frame.grid(row=i // 2, column=i % 2, padx=4, pady=3, sticky="ew")
+            theme_grid.columnconfigure(i % 2, weight=1)
+
+            # Color preview strip
+            strip = tk.Frame(btn_frame, bg=BG_CARD, height=4)
+            strip.pack(fill=tk.X)
+            for j, c in enumerate(preview_colors):
+                swatch = tk.Frame(strip, bg=c, width=20, height=4)
+                swatch.pack(side=tk.LEFT, expand=True, fill=tk.X)
+
+            btn = tk.Label(btn_frame, text=theme_name, bg=BG_ACCENT, fg=FG_PRIMARY,
+                           font=(FONT_FAMILY, 9, "bold"), padx=8, pady=4,
+                           cursor="hand2", anchor="center")
+            btn.pack(fill=tk.X)
+            btn.bind("<Button-1>", lambda e, n=theme_name: self._select_theme(n))
+            self._theme_buttons[theme_name] = btn
+
+        self._highlight_active_theme()
 
         # ── Appearance ──
         appearance_section = make_section(tab, "Text Appearance",
@@ -526,8 +646,8 @@ class App(tk.Tk):
                             "batch_size", 1, 5, True, self.settings)
 
         make_labeled_slider(timing_section, "Flash Duration (ms)",
-                            "How long each message stays visible. Lower = more subliminal (5-50ms).",
-                            "flash_duration_ms", 5, 50, True, self.settings)
+                            "How long each message stays visible. 100-200ms = readable, 5-50ms = subliminal.",
+                            "flash_duration_ms", 5, 500, True, self.settings)
 
         make_labeled_slider(timing_section, "Interval (seconds)",
                             "Time between flash batches. Lower = more frequent (0.1-5s).",
@@ -556,8 +676,8 @@ class App(tk.Tk):
                     self.test_mode_var, self._toggle_test_mode, ORANGE, bold=True)
 
         make_labeled_slider(test_section, "Display Time (seconds)",
-                            "How long test messages stay visible (1-10s).",
-                            "test_display_seconds", 1, 10, True, self.settings)
+                            "How long test messages stay visible (0.2-10s).",
+                            "test_display_seconds", 0.2, 10, False, self.settings)
 
         # ── Auto-Start ──
         auto_section = make_section(tab, "Auto-Start",
@@ -577,7 +697,7 @@ class App(tk.Tk):
 
         # ── About ──
         about_section = make_section(tab, "About")
-        tk.Label(about_section, text="MindFlash v4.0",
+        tk.Label(about_section, text="MindFlash v5.0",
                  bg=BG_CARD, fg=GOLD, font=(FONT_FAMILY, 12, "bold")).pack()
         tk.Label(about_section, text="by Emmanuel Hagan  |  Free & Open Source",
                  bg=BG_CARD, fg=FG_DIM, font=(FONT_FAMILY, 9)).pack()
@@ -603,7 +723,8 @@ class App(tk.Tk):
     # ════════════════════════════════════════════════════════
 
     def _animate_title(self):
-        colors = [GOLD, "#FFF176", "#FFEE58", "#FFD740", "#FFC107", "#FFB300"]
+        colors = [GOLD, "#FFF176", "#FFEE58", "#FFD740", "#FFC107", "#FFB300",
+                  CYAN, "#64FFDA", PURPLE, "#EA80FC", "#FF80AB", GOLD]
         self._title_step = 0
 
         def cycle():
@@ -611,7 +732,7 @@ class App(tk.Tk):
                 c = colors[self._title_step % len(colors)]
                 self.title_label.configure(fg=c)
                 self._title_step += 1
-            self.after(400, cycle)
+            self.after(350, cycle)
         cycle()
 
     def _update_status_loop(self):
@@ -624,6 +745,13 @@ class App(tk.Tk):
                 parts.append(f"{imgs} imgs")
             self.status_label.config(
                 text="RUNNING  |  " + "  |  ".join(parts), fg=GREEN)
+            # Pulse the dot
+            pulse_alpha = int(127 + 128 * math.sin(time.time() * 4))
+            pulse_hex = f"#{pulse_alpha:02x}ff{pulse_alpha:02x}"
+            try:
+                self._pulse_dot.config(fg=pulse_hex, text=" * ")
+            except tk.TclError:
+                pass
             if self.flasher.session_start:
                 elapsed = int(time.time() - self.flasher.session_start)
                 h, m, s = elapsed // 3600, (elapsed % 3600) // 60, elapsed % 60
@@ -639,6 +767,7 @@ class App(tk.Tk):
             self.status_label.config(text=f"Stopped  |  {pool} messages ready",
                                      fg=FG_DIM)
             self.timer_label.config(text="", fg=FG_DIM)
+            self._pulse_dot.config(fg=BG_DARK, text="  ")
         self.after(500, self._update_status_loop)
 
     def _update_stats_display(self):
@@ -654,6 +783,89 @@ class App(tk.Tk):
             self._streak_val.config(text=streak_text)
             self._total_val.config(text=f"{total:,}")
             self._sessions_val.config(text=str(sessions))
+
+    def _update_daily_goal_display(self):
+        if not hasattr(self, "_goal_progress_label"):
+            return
+        daily = self._get_daily_flashes()
+        goal = self.settings.get("daily_goal") or 500
+        percent = min(daily / max(goal, 1) * 100, 100)
+        bar_len = 30
+        filled = int(percent / 100 * bar_len)
+        bar = "=" * filled + "-" * (bar_len - filled)
+
+        if percent >= 100:
+            color = GOLD
+            status = "GOAL REACHED!"
+        elif percent >= 50:
+            color = GREEN
+            status = f"{daily:,} / {goal:,} flashes"
+        else:
+            color = CYAN
+            status = f"{daily:,} / {goal:,} flashes"
+
+        self._goal_progress_label.config(text=f"[{bar}]", fg=color)
+        self._goal_percent_label.config(text=f"{percent:.0f}%  --  {status}")
+
+    def _refresh_achievements_display(self):
+        for w in self._achievements_frame.winfo_children():
+            w.destroy()
+        unlocked = set(self.settings.get("achievements_unlocked") or [])
+
+        icons = {"ZAP": "//", "STAR": "**", "FIRE": "^^", "CROWN": "##",
+                 "FLAME": "~~", "TROPHY": "@@", "CHECK": "++",
+                 "DIAMOND": "<>", "ROCKET": ">>"}
+
+        grid = self._achievements_frame
+        grid.columnconfigure(0, weight=1)
+        grid.columnconfigure(1, weight=1)
+        grid.columnconfigure(2, weight=1)
+
+        for i, (key, ach) in enumerate(ACHIEVEMENTS.items()):
+            is_unlocked = key in unlocked
+            fg = GOLD if is_unlocked else FG_DIM
+            bg_c = BG_ACCENT if is_unlocked else BG_DARK
+            icon = icons.get(ach["icon"], "--")
+
+            cell = tk.Frame(grid, bg=bg_c, padx=6, pady=4,
+                            highlightbackground=GOLD if is_unlocked else BG_ACCENT,
+                            highlightthickness=1)
+            cell.grid(row=i // 3, column=i % 3, padx=3, pady=3, sticky="nsew")
+
+            tk.Label(cell, text=f"[{icon}]", bg=bg_c, fg=fg,
+                     font=(FONT_MONO, 9, "bold")).pack()
+            tk.Label(cell, text=ach["title"], bg=bg_c, fg=fg,
+                     font=(FONT_FAMILY, 8, "bold")).pack()
+            if is_unlocked:
+                tk.Label(cell, text=ach["desc"], bg=bg_c, fg=FG_DIM,
+                         font=(FONT_FAMILY, 7), wraplength=120).pack()
+
+    def _refresh_history_display(self):
+        for w in self._history_frame.winfo_children():
+            w.destroy()
+        history = list(self.settings.get("session_history") or [])
+        if not history:
+            tk.Label(self._history_frame, text="No sessions yet. Hit START!",
+                     bg=BG_CARD, fg=FG_DIM, font=(FONT_FAMILY, 9)).pack()
+            return
+
+        # Show last 7 sessions, newest first
+        for entry in reversed(history[-7:]):
+            row = tk.Frame(self._history_frame, bg=BG_CARD)
+            row.pack(fill=tk.X, pady=1)
+
+            date_str = entry.get("date", "")
+            flashes = entry.get("flashes", 0)
+            duration = entry.get("duration", 0)
+            mins = duration // 60
+            secs = duration % 60
+
+            tk.Label(row, text=date_str, bg=BG_CARD, fg=FG_DIM,
+                     font=(FONT_MONO, 8), width=16, anchor="w").pack(side=tk.LEFT)
+            tk.Label(row, text=f"{flashes:,} flashes", bg=BG_CARD, fg=CYAN,
+                     font=(FONT_FAMILY, 9, "bold"), anchor="w").pack(side=tk.LEFT, padx=(8, 0))
+            tk.Label(row, text=f"{mins}m {secs}s", bg=BG_CARD, fg=FG_DIM,
+                     font=(FONT_FAMILY, 8), anchor="e").pack(side=tk.RIGHT)
 
     def _update_breathing_indicator(self):
         if not hasattr(self, "breath_indicator"):
@@ -756,10 +968,22 @@ class App(tk.Tk):
             if m not in seen:
                 seen.add(m)
                 unique.append(m)
-        for msg in unique:
+
+        # Apply search filter
+        search_term = ""
+        if hasattr(self, "_search_var"):
+            search_term = self._search_var.get().strip().lower()
+
+        filtered = [m for m in unique if search_term in m.lower()] if search_term else unique
+        for msg in filtered:
             self.msg_listbox.insert(tk.END, msg)
-        self.msg_count_label.config(
-            text=f"{len(unique)} unique messages ({len(self.flasher.message_pool)} weighted)")
+
+        if search_term:
+            self.msg_count_label.config(
+                text=f"{len(filtered)} of {len(unique)} messages match '{search_term}'")
+        else:
+            self.msg_count_label.config(
+                text=f"{len(unique)} unique messages ({len(self.flasher.message_pool)} weighted)")
 
     def _add_message(self):
         text = self.new_msg_entry.get().strip()
@@ -892,11 +1116,20 @@ class App(tk.Tk):
 
     def toggle_flasher(self):
         if self.flasher.is_running:
+            # Record session before stopping
+            flash_count = self.flasher.flash_count
+            duration = time.time() - self.flasher.session_start if self.flasher.session_start else 0
             self.flasher.stop()
+            self._add_daily_flashes(flash_count)
+            self._record_session(flash_count, duration)
             self.start_stop_button.config(text="START FLASHING",
                                           style="Start.TButton")
             self.title("MindFlash")
             self._update_stats_display()
+            self._update_daily_goal_display()
+            self._check_achievements()
+            if hasattr(self, "_history_frame"):
+                self._refresh_history_display()
         else:
             self.flasher.start()
             self.start_stop_button.config(text="STOP", style="Stop.TButton")
@@ -904,10 +1137,15 @@ class App(tk.Tk):
             self.title(f"MindFlash{mode}")
 
     def _on_auto_stopped(self):
+        self._add_daily_flashes(self.flasher.flash_count)
+        duration = time.time() - self.flasher.session_start if self.flasher.session_start else 0
+        self._record_session(self.flasher.flash_count, duration)
         self.start_stop_button.config(text="START FLASHING",
                                        style="Start.TButton")
         self.title("MindFlash")
         self._update_stats_display()
+        self._update_daily_goal_display()
+        self._check_achievements()
         self.timer_label.config(text="Auto-stopped! Great session.", fg=GOLD)
 
     def _toggle_test_mode(self):
@@ -981,6 +1219,20 @@ class App(tk.Tk):
             except Exception as e:
                 messagebox.showerror("Error", f"Could not import file:\n{e}")
 
+    def _select_theme(self, theme_name):
+        self.theme_var.set(theme_name)
+        self.settings.set("color_theme", theme_name)
+        self._highlight_active_theme()
+
+    def _highlight_active_theme(self):
+        active = self.theme_var.get()
+        for name, btn in self._theme_buttons.items():
+            if name == active:
+                theme = COLOR_THEMES[name]
+                btn.config(bg=theme["colors"][0], fg="#000000")
+            else:
+                btn.config(bg=BG_ACCENT, fg=FG_PRIMARY)
+
     def _change_text_color(self):
         color_code = colorchooser.askcolor(title="Choose text color")
         if color_code and color_code[1]:
@@ -1009,6 +1261,102 @@ class App(tk.Tk):
         self.flasher.prepool_windows()
         if self.settings.get("auto_start"):
             self.toggle_flasher()
+
+    # ════════════════════════════════════════════════════════
+    #   ACHIEVEMENTS & TOAST NOTIFICATIONS
+    # ════════════════════════════════════════════════════════
+
+    def _check_achievements(self):
+        """Check if any new achievements have been unlocked."""
+        unlocked = set(self.settings.get("achievements_unlocked") or [])
+        stats = {
+            "session_count": self.settings.get("session_count"),
+            "total_flashes": self.settings.get("total_flashes"),
+            "streak_days": self.settings.get("streak_days"),
+        }
+        new_achievements = []
+        for key, ach in ACHIEVEMENTS.items():
+            if key not in unlocked and ach["condition"](stats):
+                new_achievements.append(ach)
+                unlocked.add(key)
+        if new_achievements:
+            self.settings.set("achievements_unlocked", list(unlocked))
+            for ach in new_achievements:
+                self._show_toast(
+                    f"Achievement Unlocked!",
+                    f"{ach['title']}\n{ach['desc']}",
+                    GOLD)
+        # Update dashboard achievements display
+        if hasattr(self, "_achievements_frame"):
+            self._refresh_achievements_display()
+
+    def _show_toast(self, title, message, color=GOLD):
+        """Show a floating toast notification that fades away."""
+        toast = tk.Toplevel(self)
+        toast.overrideredirect(True)
+        toast.attributes("-topmost", True)
+        toast.configure(bg="#1A1A2E")
+
+        # Position at top-right of screen
+        toast.update_idletasks()
+        sw = self.winfo_screenwidth()
+        toast.geometry(f"320x90+{sw - 340}+20")
+
+        inner = tk.Frame(toast, bg="#1A1A2E", padx=16, pady=12,
+                         highlightbackground=color, highlightthickness=2)
+        inner.pack(fill=tk.BOTH, expand=True)
+
+        tk.Label(inner, text=title, bg="#1A1A2E", fg=color,
+                 font=(FONT_FAMILY, 11, "bold"), anchor="w").pack(fill=tk.X)
+        tk.Label(inner, text=message, bg="#1A1A2E", fg=FG_PRIMARY,
+                 font=(FONT_FAMILY, 9), anchor="w", justify=tk.LEFT).pack(fill=tk.X, pady=(4, 0))
+
+        def fade_out(alpha=1.0):
+            if alpha > 0:
+                try:
+                    toast.attributes("-alpha", alpha)
+                    self.after(50, lambda: fade_out(alpha - 0.05))
+                except tk.TclError:
+                    pass
+            else:
+                try:
+                    toast.destroy()
+                except tk.TclError:
+                    pass
+
+        self.after(3000, fade_out)
+
+    # ════════════════════════════════════════════════════════
+    #   DAILY GOAL TRACKING
+    # ════════════════════════════════════════════════════════
+
+    def _get_daily_flashes(self):
+        """Get today's flash count, resetting if it's a new day."""
+        today = datetime.date.today().isoformat()
+        if self.settings.get("daily_flashes_date") != today:
+            self.settings.set("daily_flashes_date", today)
+            self.settings.set("daily_flashes_today", 0)
+        return self.settings.get("daily_flashes_today")
+
+    def _add_daily_flashes(self, count):
+        """Add to today's flash count."""
+        today = datetime.date.today().isoformat()
+        if self.settings.get("daily_flashes_date") != today:
+            self.settings.set("daily_flashes_date", today)
+            self.settings.set("daily_flashes_today", 0)
+        current = self.settings.get("daily_flashes_today") or 0
+        self.settings.set("daily_flashes_today", current + count)
+
+    def _record_session(self, flash_count, duration_seconds):
+        """Record a session to history."""
+        history = list(self.settings.get("session_history") or [])
+        history.append({
+            "date": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
+            "flashes": flash_count,
+            "duration": int(duration_seconds),
+        })
+        # Keep last 30
+        self.settings.set("session_history", history[-30:])
 
     def _on_closing(self):
         self.flasher.stop()

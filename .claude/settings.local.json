@@ -10,7 +10,13 @@
       "Bash(grep -E \"\\\\.py$|\\\\.gitignore|dist|\\\\.github\")",
       "Bash(grep:*)",
       "Bash(git check-ignore:*)",
-      "Bash(git config:*)"
+      "Bash(git config:*)",
+      "Bash(wc:*)",
+      "Bash(ls:*)",
+      "Bash(python:*)",
+      "Bash(Get-ChildItem *)",
+      "Bash(python3 -m py_compile app.py flasher.py settings.py constants.py ui_helpers.py platform_utils.py messages.py subliminal_master.py)",
+      "Bash(start *)"
     ]
   }
 }

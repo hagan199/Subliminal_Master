@@ -23,7 +23,7 @@ _VALIDATION_RULES = {
     "image_size":            (int, 10, 1000),
     "flash_image_only":      (bool,),
     "test_mode":             (bool,),
-    "test_display_seconds":  (int, 0, 60),
+    "test_display_seconds":  ((int, float), 0.2, 60),
     "flash_effect":          (str,),
     "focus_zone":            (str,),
     "rainbow_mode":          (bool,),
@@ -42,12 +42,19 @@ _VALIDATION_RULES = {
     "night_mode":            (bool,),
     "auto_start":            (bool,),
     "run_on_startup":        (bool,),
+    "color_theme":           (str,),
+    "daily_goal":            (int, 0, 100_000),
+    "daily_flashes_today":   (int, 0, 999_999_999),
+    "daily_flashes_date":    (str,),
+    "session_history":       (list,),
+    "achievements_unlocked": (list,),
 }
 
 # Allowed flash effects and focus zones (whitelist)
-_ALLOWED_EFFECTS = {"Instant", "Fade In", "Glow Pulse", "Typewriter"}
+_ALLOWED_EFFECTS = {"Instant", "Fade In", "Glow Pulse", "Typewriter", "Slide In", "Matrix Rain", "Spiral Emerge", "Random"}
 _ALLOWED_ZONES = {"Full Screen", "Top Half", "Center Band", "Bottom Half", "Corners Only"}
 _ALLOWED_BREATHING = {"Off", "4-7-8 Calm", "Box Breathing 4-4-4-4", "Power Breath 3-3-3", "Deep Focus 5-5-5"}
+_ALLOWED_THEMES = {"Default", "Ocean Deep", "Galaxy", "Forest", "Sunset", "Neon City", "Ice Crystal"}
 
 # Regex for valid hex color
 _HEX_COLOR_RE = re.compile(r'^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$')
@@ -60,21 +67,21 @@ class Settings:
     """Load, store, and persist user settings as JSON."""
 
     DEFAULTS = {
-        "batch_size": 5,
-        "flash_duration_ms": 35,
-        "interval_seconds": 3,
-        "margin_px": 20,
-        "font_size": 38,
-        "font_color": "#00E676",
+        "batch_size": 1,
+        "flash_duration_ms": 120,
+        "interval_seconds": 0.5,
+        "margin_px": 40,
+        "font_size": 30,
+        "font_color": "#FFFFFF",
         "image_size": 120,
         "flash_image_only": False,
         "test_mode": False,
-        "test_display_seconds": 2,
+        "test_display_seconds": 1,
         "flash_effect": "Instant",
-        "focus_zone": "Full Screen",
+        "focus_zone": "Center Band",
         "rainbow_mode": False,
         "ambient_sound": False,
-        "auto_stop_minutes": 0,
+        "auto_stop_minutes": 25,
         "session_count": 0,
         "total_flashes": 0,
         "streak_days": 0,
@@ -93,6 +100,12 @@ class Settings:
         "night_mode": False,
         "auto_start": False,
         "run_on_startup": False,
+        "color_theme": "Default",
+        "daily_goal": 500,
+        "daily_flashes_today": 0,
+        "daily_flashes_date": "",
+        "session_history": [],
+        "achievements_unlocked": [],
     }
 
     def __init__(self, filename="settings.json"):
@@ -158,6 +171,8 @@ class Settings:
             data["focus_zone"] = self.DEFAULTS["focus_zone"]
         if data.get("breathing_pattern") not in _ALLOWED_BREATHING:
             data["breathing_pattern"] = self.DEFAULTS["breathing_pattern"]
+        if data.get("color_theme") not in _ALLOWED_THEMES:
+            data["color_theme"] = self.DEFAULTS["color_theme"]
 
         # Validate hex color
         if not _HEX_COLOR_RE.match(data.get("font_color", "")):
@@ -181,6 +196,24 @@ class Settings:
             val = cats.get(cat_key, True)
             safe_cats[cat_key] = bool(val)
         data["categories_enabled"] = safe_cats
+
+        # Validate session_history: list of dicts with known keys
+        history = data.get("session_history", [])
+        if not isinstance(history, list):
+            history = []
+        # Keep only last 30 sessions
+        data["session_history"] = history[-30:]
+
+        # Validate achievements_unlocked: list of strings
+        achievements = data.get("achievements_unlocked", [])
+        if not isinstance(achievements, list):
+            achievements = []
+        data["achievements_unlocked"] = [a for a in achievements if isinstance(a, str)]
+
+        # Validate daily_flashes_date format
+        df_date = data.get("daily_flashes_date", "")
+        if df_date and not re.match(r'^\d{4}-\d{2}-\d{2}$', df_date):
+            data["daily_flashes_date"] = ""
 
         # Strip any unknown keys to prevent data injection
         known_keys = set(self.DEFAULTS.keys())

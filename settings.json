@@ -1,27 +1,27 @@
 {
-    "batch_size": 5,
-    "flash_duration_ms": 35,
-    "interval_seconds": 3.0,
-    "margin_px": 20,
-    "font_size": 38,
-    "font_color": "#00E676",
+    "batch_size": 4,
+    "flash_duration_ms": 241,
+    "interval_seconds": 3.6,
+    "margin_px": 40,
+    "font_size": 32,
+    "font_color": "#FFFFFF",
     "test_mode": true,
-    "test_display_seconds": 8,
+    "test_display_seconds": 1.61,
     "image_size": 120,
     "flash_image_only": false,
     "flash_effect": "Instant",
-    "focus_zone": "Full Screen",
-    "rainbow_mode": true,
-    "ambient_sound": true,
-    "auto_stop_minutes": 1,
-    "session_count": 8,
-    "total_flashes": 2075,
+    "focus_zone": "Center Band",
+    "rainbow_mode": false,
+    "ambient_sound": false,
+    "auto_stop_minutes": 26,
+    "session_count": 35,
+    "total_flashes": 3813,
     "streak_days": 1,
-    "last_session_date": "2026-03-10",
+    "last_session_date": "2026-05-02",
     "image_paths": [],
     "categories_enabled": {
         "career": true,
-        "financial": true,
+        "financial": false,
         "healing": true,
         "education": true
     },
@@ -31,5 +31,122 @@
     "mirror_mode": false,
     "night_mode": false,
     "auto_start": false,
-    "run_on_startup": false
+    "run_on_startup": false,
+    "color_theme": "Sunset",
+    "daily_goal": 500,
+    "daily_flashes_today": 1738,
+    "daily_flashes_date": "2026-05-02",
+    "session_history": [
+        {
+            "date": "2026-05-02 00:53",
+            "flashes": 100,
+            "duration": 60
+        },
+        {
+            "date": "2026-05-02 00:54",
+            "flashes": 100,
+            "duration": 60
+        },
+        {
+            "date": "2026-05-02 00:55",
+            "flashes": 42,
+            "duration": 22
+        },
+        {
+            "date": "2026-05-02 00:56",
+            "flashes": 66,
+            "duration": 60
+        },
+        {
+            "date": "2026-05-02 01:08",
+            "flashes": 66,
+            "duration": 60
+        },
+        {
+            "date": "2026-05-02 01:11",
+            "flashes": 81,
+            "duration": 60
+        },
+        {
+            "date": "2026-05-02 01:13",
+            "flashes": 222,
+            "duration": 60
+        },
+        {
+            "date": "2026-05-02 01:16",
+            "flashes": 33,
+            "duration": 11
+        },
+        {
+            "date": "2026-05-02 01:16",
+            "flashes": 30,
+            "duration": 34
+        },
+        {
+            "date": "2026-05-02 01:17",
+            "flashes": 42,
+            "duration": 49
+        },
+        {
+            "date": "2026-05-02 01:18",
+            "flashes": 51,
+            "duration": 60
+        },
+        {
+            "date": "2026-05-02 01:23",
+            "flashes": 45,
+            "duration": 80
+        },
+        {
+            "date": "2026-05-02 01:24",
+            "flashes": 45,
+            "duration": 71
+        },
+        {
+            "date": "2026-05-02 01:28",
+            "flashes": 436,
+            "duration": 250
+        },
+        {
+            "date": "2026-05-02 01:29",
+            "flashes": 31,
+            "duration": 41
+        },
+        {
+            "date": "2026-05-02 01:30",
+            "flashes": 68,
+            "duration": 78
+        },
+        {
+            "date": "2026-05-02 01:32",
+            "flashes": 78,
+            "duration": 90
+        },
+        {
+            "date": "2026-05-02 01:32",
+            "flashes": 24,
+            "duration": 27
+        },
+        {
+            "date": "2026-05-02 01:47",
+            "flashes": 58,
+            "duration": 104
+        },
+        {
+            "date": "2026-05-02 01:50",
+            "flashes": 52,
+            "duration": 57
+        },
+        {
+            "date": "2026-05-02 01:53",
+            "flashes": 68,
+            "duration": 59
+        }
+    ],
+    "achievements_unlocked": [
+        "century",
+        "ten_sessions",
+        "first_flash",
+        "thousand"
+    ]
 }

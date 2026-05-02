@@ -15,7 +15,7 @@ import math
 import datetime
 from screeninfo import get_monitors
 
-from constants import NEON_COLORS, BREATHING_PATTERNS
+from constants import NEON_COLORS, BREATHING_PATTERNS, COLOR_THEMES, ACHIEVEMENTS
 from messages import AWESOME_MESSAGES
 from platform_utils import (
     make_window_transparent, get_transparent_bg, play_ping,
@@ -178,18 +178,40 @@ class SubliminalFlasher:
         mw = max(monitor.width - 2 * margin - width, 0)
         mh = max(monitor.height - 2 * margin - height, 0)
 
-        if zone == "Top Half":
-            return mx + random.randint(0, mw), my + random.randint(0, max(mh // 2, 0))
-        elif zone == "Bottom Half":
-            return mx + random.randint(0, mw), my + max(mh // 2, 0) + random.randint(0, max(mh // 2, 0))
-        elif zone == "Center Band":
-            cy = my + mh // 4
-            return mx + random.randint(0, mw), cy + random.randint(0, max(mh // 2, 0))
-        elif zone == "Corners Only":
-            corners = [(mx, my), (mx + mw, my), (mx, my + mh), (mx + mw, my + mh)]
-            return random.choice(corners)
-        else:  # Full Screen
-            return mx + random.randint(0, mw), my + random.randint(0, mh)
+        def pick():
+            if zone == "Top Half":
+                return mx + random.randint(0, mw), my + random.randint(0, max(mh // 2, 0))
+            elif zone == "Bottom Half":
+                return mx + random.randint(0, mw), my + max(mh // 2, 0) + random.randint(0, max(mh // 2, 0))
+            elif zone == "Center Band":
+                cy = my + mh // 4
+                return mx + random.randint(0, mw), cy + random.randint(0, max(mh // 2, 0))
+            elif zone == "Corners Only":
+                corners = [(mx, my), (mx + mw, my), (mx, my + mh), (mx + mw, my + mh)]
+                return random.choice(corners)
+            else:
+                return mx + random.randint(0, mw), my + random.randint(0, mh)
+
+        # Anti-overlap: try up to 8 positions, pick one that doesn't collide with active windows
+        pad = 20
+        best = None
+        for _ in range(8):
+            x, y = pick()
+            collides = False
+            for w, _l, _il in self.active_windows:
+                try:
+                    wx, wy = w.winfo_x(), w.winfo_y()
+                    ww, wh = w.winfo_width(), w.winfo_height()
+                except tk.TclError:
+                    continue
+                if (x < wx + ww + pad and x + width + pad > wx and
+                        y < wy + wh + pad and y + height + pad > wy):
+                    collides = True
+                    break
+            if not collides:
+                return x, y
+            best = (x, y)
+        return best or pick()
 
     # ── Image Handling ──────────────────────────────────────
 
@@ -260,10 +282,12 @@ class SubliminalFlasher:
     # ── Color & Transform ───────────────────────────────────
 
     def _get_flash_color(self):
+        theme_name = self.settings.get("color_theme") or "Default"
+        theme = COLOR_THEMES.get(theme_name, COLOR_THEMES["Default"])
         if self.settings.get("night_mode"):
-            return random.choice(["#FF8F00", "#FFA726", "#FFB74D", "#FFCC02", "#E65100"])
+            return random.choice(theme["night"])
         if self.settings.get("rainbow_mode"):
-            return random.choice(NEON_COLORS)
+            return random.choice(theme["colors"])
         return self.settings.get("font_color")
 
     def _transform_message(self, message):
@@ -312,23 +336,32 @@ class SubliminalFlasher:
             self._create_flash_window(message)
             self.flash_count += 1
 
-        # Sound removed — silent operation
-        pass  # ambient sound disabled
-
         if self.settings.get("power_hour"):
             delay_ms = max(int(self.settings.get("interval_seconds") * 800), 200)
         else:
-            delay_ms = int(self.settings.get("interval_seconds") * 2000)
+            delay_ms = int(self.settings.get("interval_seconds") * 1000)
         self.job_id = self.root.after(delay_ms, self._flash_batch)
 
     def _make_flash_window(self):
         """Create a new flash overlay window (platform-safe)."""
         window = tk.Toplevel(self.root)
         make_window_transparent(window)
-        img_label = tk.Label(window, bg=_TRANS_BG)
+        # Inner frame holds image + text; bg swapped at flash-time for test-mode backdrop
+        frame = tk.Frame(window, bg=_TRANS_BG)
+        frame.pack(padx=0, pady=0)
+        img_label = tk.Label(frame, bg=_TRANS_BG)
         img_label.pack(padx=10, pady=5)
-        label = tk.Label(window, bg=_TRANS_BG, justify=tk.CENTER)
-        label.pack(padx=20, pady=10)
+        # Shadow label sits behind main label, offset by 2px for outline effect
+        text_holder = tk.Frame(frame, bg=_TRANS_BG)
+        text_holder.pack(padx=20, pady=10)
+        shadow = tk.Label(text_holder, bg=_TRANS_BG, fg="#000000", justify=tk.CENTER)
+        shadow.place(x=2, y=2)
+        label = tk.Label(text_holder, bg=_TRANS_BG, justify=tk.CENTER)
+        label.pack()
+        # Stash refs so _create_flash_window can update them
+        window._frame = frame
+        window._text_holder = text_holder
+        window._shadow = shadow
         return window, label, img_label
 
     def _create_flash_window(self, message):
@@ -337,9 +370,9 @@ class SubliminalFlasher:
         else:
             window, label, img_label = self._make_flash_window()
 
-        font_size = min(self.settings.get("font_size"), 32)
+        font_size = min(self.settings.get("font_size"), 40)
         if self.settings.get("test_mode"):
-            font_size = max(font_size, 24)
+            font_size = max(min(font_size, 28), 18)
         if font_size != self.cached_font_size:
             self.cached_font_size = font_size
             self.cached_font = font.Font(family=FONT_FAMILY, size=font_size, weight="bold")
@@ -355,30 +388,65 @@ class SubliminalFlasher:
             img_label.config(image="")
             img_label.image = None
 
+        # Always transparent background; rely on text shadow for legibility
+        try:
+            window._frame.config(bg=_TRANS_BG)
+            window._text_holder.config(bg=_TRANS_BG)
+            img_label.config(bg=_TRANS_BG)
+            window._shadow.config(bg=_TRANS_BG)
+        except (tk.TclError, AttributeError):
+            pass
+
+        shadow = getattr(window, "_shadow", None)
         if flash_image_only and photo:
             label.config(text="", font=self.cached_font)
+            if shadow:
+                shadow.config(text="", font=self.cached_font)
         else:
-            label.config(text=message, font=self.cached_font, fg=color,
-                         wraplength=self.monitors[0].width * 0.7)
+            mon = self.monitors[0]
+            margin = self.settings.get("margin_px") or 0
+            # Reserve enough room so wrapped text never clips at the edges
+            wrap = max(mon.width - 2 * margin - 80, 200)
+            label.config(text=message, font=self.cached_font, fg=color, wraplength=wrap)
+            if shadow:
+                shadow.config(text=message, font=self.cached_font, wraplength=wrap)
+                shadow.place(x=2, y=2)
 
         window.update_idletasks()
         width = window.winfo_width()
         height = window.winfo_height()
         x, y = self._get_zone_position(width, height)
+        # Clamp so the window can't sit past the monitor edge and clip text
+        mon = self.monitors[0]
+        if x + width > mon.x + mon.width:
+            x = mon.x + mon.width - width
+        if x < mon.x:
+            x = mon.x
         window.geometry(f"{width}x{height}+{x}+{y}")
 
         effect = self.settings.get("flash_effect")
         if self.settings.get("test_mode"):
-            display_time = self.settings.get("test_display_seconds") * 1000
+            display_time = max(int(self.settings.get("test_display_seconds") * 1000), 50)
         else:
             display_time = self.settings.get("flash_duration_ms")
 
+        if effect == "Random":
+            effect = random.choice([
+                "Instant", "Fade In", "Glow Pulse",
+                "Slide In", "Spiral Emerge",
+            ])
         if effect == "Fade In":
             self._effect_fade_in(window, label, img_label, display_time)
         elif effect == "Glow Pulse":
             self._effect_glow_pulse(window, label, img_label, display_time)
         elif effect == "Typewriter" and not (flash_image_only and photo):
             self._effect_typewriter(window, label, img_label, message, color, display_time)
+        elif effect == "Slide In":
+            self._effect_slide_in(window, label, img_label, x, y, display_time)
+        elif effect == "Matrix Rain" and not (flash_image_only and photo):
+            self._effect_matrix_rain(window, label, img_label, message, color, display_time)
+        elif effect == "Spiral Emerge":
+            self._effect_spiral_emerge(window, label, img_label, x, y, display_time)
         else:  # Instant
             window.attributes("-alpha", 1.0)
             window.deiconify()
@@ -457,8 +525,105 @@ class SubliminalFlasher:
                 self.root.after(display_time, lambda w=window, l=label, il=img_label: self._hide_window(w, l, il))
         type_char()
 
+    def _effect_slide_in(self, window, label, img_label, target_x, target_y, display_time):
+        """Slide the message in from the left edge."""
+        monitor = random.choice(self.monitors)
+        start_x = monitor.x - 400
+        window.attributes("-alpha", 1.0)
+        window.geometry(f"+{start_x}+{target_y}")
+        window.deiconify()
+        window.lift()
+        self.active_windows.append((window, label, img_label))
+        total_steps = 12
+        dx = (target_x - start_x) / total_steps
+
+        def slide(step=0):
+            if step <= total_steps:
+                cx = int(start_x + dx * step)
+                try:
+                    window.geometry(f"+{cx}+{target_y}")
+                except tk.TclError:
+                    return
+                job = self.root.after(12, lambda: slide(step + 1))
+                self.fade_jobs.append(job)
+            else:
+                self.root.after(display_time, lambda: self._fade_out(window, label, img_label))
+        slide()
+
+    def _effect_matrix_rain(self, window, label, img_label, full_text, color, display_time):
+        """Characters fall into place like the Matrix."""
+        window.attributes("-alpha", 1.0)
+        window.deiconify()
+        window.lift()
+        self.active_windows.append((window, label, img_label))
+        chars = list(full_text)
+        revealed = [''] * len(chars)
+        matrix_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#$%&*"
+        scramble_rounds = 3
+        total_steps = len(chars) * scramble_rounds
+
+        def rain(step=0):
+            if step <= total_steps:
+                idx = step // scramble_rounds
+                sub_step = step % scramble_rounds
+                for i in range(min(idx, len(chars))):
+                    revealed[i] = chars[i]
+                if idx < len(chars):
+                    if sub_step < scramble_rounds - 1:
+                        revealed[idx] = random.choice(matrix_chars)
+                    else:
+                        revealed[idx] = chars[idx]
+                display = "".join(revealed[:idx + 1])
+                label.config(text=display, fg=color)
+                window.update_idletasks()
+                job = self.root.after(18, lambda: rain(step + 1))
+                self.fade_jobs.append(job)
+            else:
+                label.config(text=full_text, fg=color)
+                self.root.after(display_time, lambda w=window, l=label, il=img_label: self._hide_window(w, l, il))
+        rain()
+
+    def _effect_spiral_emerge(self, window, label, img_label, target_x, target_y, display_time):
+        """Message spirals in from a circular path to its final position."""
+        window.attributes("-alpha", 0.0)
+        window.deiconify()
+        window.lift()
+        self.active_windows.append((window, label, img_label))
+        total_steps = 20
+        radius = 80
+
+        def spiral(step=0):
+            if step <= total_steps:
+                progress = step / total_steps
+                angle = progress * math.pi * 3
+                r = radius * (1 - progress)
+                cx = int(target_x + r * math.cos(angle))
+                cy = int(target_y + r * math.sin(angle))
+                try:
+                    window.geometry(f"+{cx}+{cy}")
+                    window.attributes("-alpha", progress)
+                except tk.TclError:
+                    return
+                job = self.root.after(16, lambda: spiral(step + 1))
+                self.fade_jobs.append(job)
+            else:
+                try:
+                    window.geometry(f"+{target_x}+{target_y}")
+                    window.attributes("-alpha", 1.0)
+                except tk.TclError:
+                    return
+                self.root.after(display_time, lambda: self._fade_out(window, label, img_label))
+        spiral()
+
     def _hide_window(self, window, label, img_label):
         try:
+            window.attributes("-alpha", 0.0)
+            label.config(text="")
+            shadow = getattr(window, "_shadow", None)
+            if shadow:
+                shadow.config(text="")
+            img_label.config(image="")
+            img_label.image = None
             window.withdraw()
         except tk.TclError:
             pass
